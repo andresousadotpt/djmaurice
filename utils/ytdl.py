@@ -13,21 +13,22 @@ import yt_dlp
 _COOKIES_FILE = os.getenv("COOKIES_FILE", "cookies.txt")
 _cookies_opt = {"cookiefile": _COOKIES_FILE} if Path(_COOKIES_FILE).is_file() else {}
 
-YTDL_SEARCH_OPTS = {
+_COMMON_OPTS = {
     "format": "bestaudio/best",
     "noplaylist": True,
     "quiet": True,
     "no_warnings": True,
-    "extract_flat": "in_playlist",
+    "js_runtimes": {"node": {}, "deno": {}},
     **_cookies_opt,
 }
 
+YTDL_SEARCH_OPTS = {
+    **_COMMON_OPTS,
+    "extract_flat": "in_playlist",
+}
+
 YTDL_EXTRACT_OPTS = {
-    "format": "bestaudio/best",
-    "noplaylist": True,
-    "quiet": True,
-    "no_warnings": True,
-    **_cookies_opt,
+    **_COMMON_OPTS,
 }
 
 FFMPEG_OPTS = {

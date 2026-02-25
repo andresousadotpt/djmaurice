@@ -1,5 +1,6 @@
 discord.py[voice]
 yt-dlp
+yt-dlp-ejs
 python-dotenv
 PyNaCl
 gTTS
