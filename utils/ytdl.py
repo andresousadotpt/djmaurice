@@ -4,8 +4,14 @@ import asyncio
 import functools
 from dataclasses import dataclass
 
+import os
+from pathlib import Path
+
 import discord
 import yt_dlp
+
+_COOKIES_FILE = os.getenv("COOKIES_FILE", "cookies.txt")
+_cookies_opt = {"cookiefile": _COOKIES_FILE} if Path(_COOKIES_FILE).is_file() else {}
 
 YTDL_SEARCH_OPTS = {
     "format": "bestaudio/best",
@@ -13,6 +19,7 @@ YTDL_SEARCH_OPTS = {
     "quiet": True,
     "no_warnings": True,
     "extract_flat": "in_playlist",
+    **_cookies_opt,
 }
 
 YTDL_EXTRACT_OPTS = {
@@ -20,6 +27,7 @@ YTDL_EXTRACT_OPTS = {
     "noplaylist": True,
     "quiet": True,
     "no_warnings": True,
+    **_cookies_opt,
 }
 
 FFMPEG_OPTS = {
