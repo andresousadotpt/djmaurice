@@ -107,10 +107,11 @@ class Music(commands.Cog):
     async def _ensure_voice(
         self, interaction: discord.Interaction
     ) -> discord.VoiceClient | None:
-        """Join the user's voice channel if not already connected. Returns VoiceClient or None."""
+        """Join the user's voice channel if not already connected. Returns VoiceClient or None.
+        Caller must defer the interaction before calling this."""
         if not interaction.user.voice or not interaction.user.voice.channel:
-            await interaction.response.send_message(
-                "You need to be in a voice channel.", ephemeral=True
+            await interaction.followup.send(
+                "You need to be in a voice channel."
             )
             return None
 
@@ -191,6 +192,8 @@ class Music(commands.Cog):
     @app_commands.command(name="play", description="Play a YouTube URL or search for a track")
     @app_commands.describe(query="YouTube URL or search query")
     async def play(self, interaction: discord.Interaction, query: str) -> None:
+        await interaction.response.defer()
+
         vc = await self._ensure_voice(interaction)
         if vc is None:
             return
@@ -199,7 +202,6 @@ class Music(commands.Cog):
         gq.text_channel = interaction.channel
 
         if _is_url(query):
-            await interaction.response.defer()
             track = await extract_track(query)
             if not track:
                 await interaction.followup.send("Could not extract track from URL.")
@@ -214,7 +216,6 @@ class Music(commands.Cog):
                     f"**Now playing:** {track.title}"
                 )
         else:
-            await interaction.response.defer()
             results = await search_youtube(query)
             if not results:
                 await interaction.followup.send("No results found.")
