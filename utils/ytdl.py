@@ -12,8 +12,7 @@ YTDL_SEARCH_OPTS = {
     "noplaylist": True,
     "quiet": True,
     "no_warnings": True,
-    "default_search": "ytsearch5",
-    "extract_flat": True,
+    "extract_flat": "in_playlist",
 }
 
 YTDL_EXTRACT_OPTS = {
@@ -53,7 +52,7 @@ async def search_youtube(query: str) -> list[TrackInfo]:
     """Search YouTube and return top 5 results (metadata only, fast)."""
     loop = asyncio.get_running_loop()
     ytdl = yt_dlp.YoutubeDL(YTDL_SEARCH_OPTS)
-    func = functools.partial(ytdl.extract_info, query, download=False)
+    func = functools.partial(ytdl.extract_info, f"ytsearch5:{query}", download=False)
     data = await loop.run_in_executor(None, func)
 
     if not data or "entries" not in data:
@@ -63,11 +62,12 @@ async def search_youtube(query: str) -> list[TrackInfo]:
     for entry in data["entries"][:5]:
         if entry is None:
             continue
+        webpage_url = entry.get("url", f"https://www.youtube.com/watch?v={entry.get('id', '')}")
         results.append(
             TrackInfo(
                 title=entry.get("title", "Unknown"),
-                url=entry.get("url", ""),
-                webpage_url=entry.get("url", ""),
+                url=webpage_url,
+                webpage_url=webpage_url,
                 duration=entry.get("duration"),
                 thumbnail=entry.get("thumbnails", [{}])[0].get("url")
                 if entry.get("thumbnails")
