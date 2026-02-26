@@ -2,42 +2,49 @@ from __future__ import annotations
 
 import asyncio
 import functools
-from dataclasses import dataclass
-
-import os
-from pathlib import Path
-
 import logging
+import os
+import urllib.request
+from dataclasses import dataclass
+from pathlib import Path
 
 import discord
 import yt_dlp
 
 log = logging.getLogger(__name__)
 
-_COOKIES_FILE = os.getenv("COOKIES_FILE", "cookies.txt")
 _POT_HOST = os.getenv("POT_PROVIDER_HOST")
 
 
+def _check_pot_provider() -> bool:
+    """Check if the PO token provider is reachable."""
+    if not _POT_HOST:
+        return False
+    try:
+        urllib.request.urlopen(_POT_HOST, timeout=5)
+        return True
+    except Exception as e:
+        log.error("PO token provider at %s is NOT reachable: %s", _POT_HOST, e)
+        return False
+
+
 def _auth_opts() -> dict:
-    """Build auth options. PO token provider preferred, cookies as fallback."""
+    """Build auth options. PO token provider only (no expired cookies)."""
     opts: dict = {}
     if _POT_HOST:
-        log.info("Using PO token provider at %s", _POT_HOST)
+        reachable = _check_pot_provider()
+        if reachable:
+            log.info("PO token provider at %s is reachable", _POT_HOST)
         opts["extractor_args"] = {
             "youtubepot-bgutilhttp": {"base_url": [_POT_HOST]},
         }
     else:
         log.warning("POT_PROVIDER_HOST not set — PO token provider disabled")
-    if Path(_COOKIES_FILE).is_file():
-        log.info("Using cookies file: %s", _COOKIES_FILE)
-        opts["cookiefile"] = _COOKIES_FILE
-    if not _POT_HOST and not Path(_COOKIES_FILE).is_file():
-        log.warning("No auth configured — YouTube may block requests")
+        log.warning("YouTube will likely block requests")
     return opts
 
 
 _auth = _auth_opts()
-log.info("yt-dlp auth config: %s", {k: v for k, v in _auth.items() if k != "cookiefile"})
 
 _COMMON_OPTS = {
     "format": "bestaudio/best",
