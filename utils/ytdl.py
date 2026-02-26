@@ -4,20 +4,50 @@ import asyncio
 import functools
 import logging
 import os
+import urllib.request
 from dataclasses import dataclass
+from pathlib import Path
 
 import discord
 import yt_dlp
 
 log = logging.getLogger(__name__)
 
-_PROXY_URL = os.getenv("PROXY_URL")
-_FORCE_IPV6 = os.getenv("FORCE_IPV6", "").lower() in ("1", "true", "yes")
+_POT_HOST = os.getenv("POT_PROVIDER_HOST")
 
-if _PROXY_URL:
-    log.info("Using proxy: %s", _PROXY_URL.split("@")[-1])  # log host only
-if _FORCE_IPV6:
-    log.info("Forcing IPv6 for YouTube requests")
+
+def _check_pot_provider() -> bool:
+    """Check if the PO token provider is reachable."""
+    if not _POT_HOST:
+        return False
+    try:
+        urllib.request.urlopen(_POT_HOST, timeout=5)
+        return True
+    except urllib.error.HTTPError:
+        # 404 etc on root path is fine — server is up, just no root handler
+        return True
+    except Exception as e:
+        log.error("PO token provider at %s is NOT reachable: %s", _POT_HOST, e)
+        return False
+
+
+def _auth_opts() -> dict:
+    """Build auth options. PO token provider only (no expired cookies)."""
+    opts: dict = {}
+    if _POT_HOST:
+        reachable = _check_pot_provider()
+        if reachable:
+            log.info("PO token provider at %s is reachable", _POT_HOST)
+        opts["extractor_args"] = {
+            "youtubepot-bgutilhttp": {"base_url": [_POT_HOST]},
+        }
+    else:
+        log.warning("POT_PROVIDER_HOST not set — PO token provider disabled")
+        log.warning("YouTube will likely block requests")
+    return opts
+
+
+_auth = _auth_opts()
 
 _COMMON_OPTS = {
     "format": "bestaudio/best",
@@ -26,8 +56,7 @@ _COMMON_OPTS = {
     "no_warnings": True,
     "verbose": bool(os.getenv("YTDL_VERBOSE")),
     "js_runtimes": {"node": {}, "deno": {}},
-    **({"proxy": _PROXY_URL} if _PROXY_URL else {}),
-    **({"source_address": "::"} if _FORCE_IPV6 else {}),
+    **_auth,
 }
 
 YTDL_SEARCH_OPTS = {

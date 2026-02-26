@@ -1,6 +1,7 @@
 discord.py[voice]
 yt-dlp
 yt-dlp-ejs
+bgutil-ytdlp-pot-provider
 python-dotenv
 PyNaCl
 gTTS
