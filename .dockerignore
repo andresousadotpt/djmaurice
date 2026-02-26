@@ -1,6 +1,0 @@
-.env
-.venv/
-.git/
-.cache/
-__pycache__/
-cookies.txt
