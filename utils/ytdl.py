@@ -11,7 +11,21 @@ import discord
 import yt_dlp
 
 _COOKIES_FILE = os.getenv("COOKIES_FILE", "cookies.txt")
-_cookies_opt = {"cookiefile": _COOKIES_FILE} if Path(_COOKIES_FILE).is_file() else {}
+_POT_HOST = os.getenv("POT_PROVIDER_HOST", "http://pot-provider:4416")
+
+
+def _auth_opts() -> dict:
+    """Build auth options. PO token provider preferred, cookies as fallback."""
+    opts: dict = {}
+    # Point the bgutil PO token plugin at the provider sidecar
+    opts["extractor_args"] = {
+        "youtubepot-bgutilhttp": {"base_url": [_POT_HOST]},
+    }
+    # Keep cookies as additional fallback
+    if Path(_COOKIES_FILE).is_file():
+        opts["cookiefile"] = _COOKIES_FILE
+    return opts
+
 
 _COMMON_OPTS = {
     "format": "bestaudio/best",
@@ -19,7 +33,7 @@ _COMMON_OPTS = {
     "quiet": True,
     "no_warnings": True,
     "js_runtimes": {"node": {}, "deno": {}},
-    **_cookies_opt,
+    **_auth_opts(),
 }
 
 YTDL_SEARCH_OPTS = {
