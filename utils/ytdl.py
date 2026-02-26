@@ -7,33 +7,46 @@ from dataclasses import dataclass
 import os
 from pathlib import Path
 
+import logging
+
 import discord
 import yt_dlp
 
+log = logging.getLogger(__name__)
+
 _COOKIES_FILE = os.getenv("COOKIES_FILE", "cookies.txt")
-_POT_HOST = os.getenv("POT_PROVIDER_HOST", "http://pot-provider:4416")
+_POT_HOST = os.getenv("POT_PROVIDER_HOST")
 
 
 def _auth_opts() -> dict:
     """Build auth options. PO token provider preferred, cookies as fallback."""
     opts: dict = {}
-    # Point the bgutil PO token plugin at the provider sidecar
-    opts["extractor_args"] = {
-        "youtubepot-bgutilhttp": {"base_url": [_POT_HOST]},
-    }
-    # Keep cookies as additional fallback
+    if _POT_HOST:
+        log.info("Using PO token provider at %s", _POT_HOST)
+        opts["extractor_args"] = {
+            "youtubepot-bgutilhttp": {"base_url": [_POT_HOST]},
+        }
+    else:
+        log.warning("POT_PROVIDER_HOST not set — PO token provider disabled")
     if Path(_COOKIES_FILE).is_file():
+        log.info("Using cookies file: %s", _COOKIES_FILE)
         opts["cookiefile"] = _COOKIES_FILE
+    if not _POT_HOST and not Path(_COOKIES_FILE).is_file():
+        log.warning("No auth configured — YouTube may block requests")
     return opts
 
+
+_auth = _auth_opts()
+log.info("yt-dlp auth config: %s", {k: v for k, v in _auth.items() if k != "cookiefile"})
 
 _COMMON_OPTS = {
     "format": "bestaudio/best",
     "noplaylist": True,
     "quiet": True,
     "no_warnings": True,
+    "verbose": bool(os.getenv("YTDL_VERBOSE")),
     "js_runtimes": {"node": {}, "deno": {}},
-    **_auth_opts(),
+    **_auth,
 }
 
 YTDL_SEARCH_OPTS = {
