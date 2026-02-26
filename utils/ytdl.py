@@ -23,6 +23,9 @@ def _check_pot_provider() -> bool:
     try:
         urllib.request.urlopen(_POT_HOST, timeout=5)
         return True
+    except urllib.error.HTTPError:
+        # 404 etc on root path is fine — server is up, just no root handler
+        return True
     except Exception as e:
         log.error("PO token provider at %s is NOT reachable: %s", _POT_HOST, e)
         return False
