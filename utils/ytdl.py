@@ -8,7 +8,7 @@ import discord
 import yt_dlp
 
 _COMMON_OPTS = {
-    "format": "bestaudio/best",
+    "format": "bestaudio[abr<=128]/bestaudio/best",
     "noplaylist": True,
     "quiet": True,
     "no_warnings": True,
@@ -25,7 +25,11 @@ YTDL_EXTRACT_OPTS = {
 }
 
 FFMPEG_OPTS = {
-    "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+    "before_options": (
+        "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5"
+        " -reconnect_on_network_error 1"
+        " -probesize 32768 -analyzeduration 0"
+    ),
     "options": "-vn",
 }
 
