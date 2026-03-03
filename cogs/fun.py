@@ -293,6 +293,12 @@ class Fun(commands.Cog):
         # Connect to voice
         target = interaction.user.voice.channel
         vc = interaction.guild.voice_client
+        if vc is not None and not vc.is_connected():
+            try:
+                await vc.disconnect(force=True)
+            except Exception:
+                pass
+            vc = None
         if vc is None:
             vc = await target.connect()
         elif vc.channel.id != target.id:
@@ -309,7 +315,12 @@ class Fun(commands.Cog):
             os.unlink(tmp.name)
             self.bot.loop.call_soon_threadsafe(done.set)
 
-        vc.play(discord.FFmpegPCMAudio(tmp.name), after=after_play)
+        try:
+            vc.play(discord.FFmpegPCMAudio(tmp.name), after=after_play)
+        except discord.ClientException:
+            os.unlink(tmp.name)
+            await interaction.followup.send("Failed to connect to voice. Please try again.", ephemeral=True)
+            return
         await interaction.followup.send(f'Speaking: "{text}"')
         await done.wait()
 
@@ -475,6 +486,12 @@ class Fun(commands.Cog):
 
         target = interaction.user.voice.channel
         vc = interaction.guild.voice_client
+        if vc is not None and not vc.is_connected():
+            try:
+                await vc.disconnect(force=True)
+            except Exception:
+                pass
+            vc = None
         if vc is None:
             vc = await target.connect()
         elif vc.channel.id != target.id:
@@ -491,7 +508,12 @@ class Fun(commands.Cog):
 
         # Max volume
         source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(tmp.name), volume=2.0)
-        vc.play(source, after=after_play)
+        try:
+            vc.play(source, after=after_play)
+        except discord.ClientException:
+            os.unlink(tmp.name)
+            await interaction.followup.send("Failed to connect to voice. Please try again.", ephemeral=True)
+            return
         await interaction.followup.send("BOO!")
         await done.wait()
 

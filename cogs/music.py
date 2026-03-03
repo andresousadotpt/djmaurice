@@ -118,6 +118,12 @@ class Music(commands.Cog):
         vc = interaction.guild.voice_client
         target = interaction.user.voice.channel
 
+        if vc is not None and not vc.is_connected():
+            try:
+                await vc.disconnect(force=True)
+            except Exception:
+                pass
+            vc = None
         if vc is None:
             vc = await target.connect()
         elif vc.channel.id != target.id:
